@@ -22,7 +22,9 @@ window = pygame.display.set_mode((300,300))
 pygame.display.set_caption("Pygame Demonstration")
 
 mainloop=True
-s=20
+MIN=20
+MAX=100
+s=MIN
 a=s
 control = [0, 0, 0, 0]
 while mainloop:
@@ -34,11 +36,10 @@ while mainloop:
             mainloop=False
         
         if event.type==pygame.KEYDOWN:
-            print(event.key, ", ", a, ", ", s)
             control = [0, 0, 0, 0]
             if event.key==264 or event.key==119:#UP w
                 control = [a, a, a, a]
-            if event.key==258 or event.key==120:#DOWN x
+            if event.key==258 or event.key==120 or event.key==115:#DOWN x s
                 control = [-a, -a, -a, -a]
             if event.key==260 or event.key==97:#LEFT a
                 control = [-a, a, a, -a]
@@ -58,14 +59,19 @@ while mainloop:
                 control = [a, -a, a, -a]            
             if event.key==270 or event.key==61:#+
                 s += 5
+                s = min(s, MAX)
             if event.key==269 or event.key==45:#-
-                s -= 5            
-
-
+                s -= 5
+                s = max(s, MIN)
+            print(event.key, ", ", a, ", ", s, ", ", control)
+            bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, control)
+                    
         if event.type==pygame.KEYUP:
             control = [0, 0, 0, 0]
             a=s
-        bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, control)
+            print(event.key, ", ", a, ", ", s, ", ", control)
+            bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, control)
+        
 
 pygame.quit()
   

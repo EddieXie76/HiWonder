@@ -24,8 +24,8 @@ pygame.display.set_caption("Pygame Demonstration")
 mainloop=True
 MIN=1
 MAX=100
-s=MIN
-a=1
+s=50
+a=s
 control = [0, 0, 0, 0]
 while mainloop:
 
@@ -37,6 +37,26 @@ while mainloop:
         
         if event.type==pygame.KEYDOWN:
             control = [0, 0, 0, 0]
+            if event.key==117:#u
+                control = [a, a//2, a, a//2]
+            if event.key==121:#y
+                control = [a//2, a, a//2, a]
+            if event.key==104:#h
+                control = [-a//2,-a,-a//2,-a]
+            if event.key==106:#j
+                control = [-a,-a//2,-a,-a//2]
+            if event.key==102:#f
+               control = [-a//5,a//5,a,-a]
+            if event.key==114:#r
+                control = [a//5,-a//5,-a,a]
+            if event.key==49:
+                control = [5,0,0,0]
+            if event.key==50:
+                control = [0,5,0,0]
+            if event.key==51:
+                control = [0,0,5,0]
+            if event.key==52:
+                control = [0,0,0,5]
             if event.key==264 or event.key==119:#UP w
                 control = [a, a, a, a]
             if event.key==258 or event.key==120 or event.key==115:#DOWN x s

@@ -45,12 +45,15 @@ class TextPrint:
         self.x -= 10
 
 deadZone=0.2
-def map_motor(input):
+def dead_zone(input):
     if input > deadZone:
-        return round(interp(input, [deadZone, 1], [0, 100]))
+        return interp(input, [deadZone, 1], [0, 1])
     if input < -deadZone:
-        return round(interp(input, [-1, -deadZone], [-100, 0]))
+        return interp(input, [-1, -deadZone], [-1, 0])
     return 0
+
+def map_motor(input):
+    return round(interp(input, [-1, 1], [-100, 100]))
 
 def main():
     # Set the width and height of the screen (width, height), and name the window.
@@ -100,9 +103,9 @@ def main():
             continue
         joystick = joysticks[0]
         
-        x = joystick.get_axis(0) * 0.8
-        y = -joystick.get_axis(1)
-        turn = joystick.get_axis(2) * 0.7
+        x = dead_zone(joystick.get_axis(0)) * 0.7
+        y = dead_zone(-joystick.get_axis(1))
+        turn = dead_zone(joystick.get_axis(2))
         
         theta = math.atan2(y, x)
         power = math.hypot(x, y)
@@ -141,9 +144,9 @@ def main():
         text_print.tprint(screen, f"Motor: {motor}")
 
         pygame.draw.circle(screen, [0, 0, 200], [400, 400], 300, width = 5)
-        pygame.draw.circle(screen, [200, 0, 0], [400 + math.cos(theta) * power * 200, 400 - math.sin(theta) * power * 200], 50)
-        #pygame.draw.circle(screen, [200, 0, 0], [math.theta, 400], power * 100)
-        
+        pygame.draw.circle(screen, [200, 0, 0], [400+math.cos(theta)*power*200, 400-math.sin(theta)*power*200], 50)
+        pygame.draw.line(screen, [100, 200, 0], [400, 200], [400+turn*200, 200], width = 10)
+      
 
         bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, motor)
 

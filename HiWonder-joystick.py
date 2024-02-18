@@ -45,10 +45,10 @@ class TextPrint:
         self.x -= 10
 
 def dead_zone(input, deadZone, center):
-    if input > deadZone:
-        return interp(input, [deadZone + center, 1], [0, 1])
-    if input < -deadZone:
-        return interp(input, [-1, -deadZone + center], [-1, 0])
+    if input > center+deadZone:
+        return interp(input, [center+deadZone, 1], [0, 1])
+    if input < center-deadZone:
+        return interp(input, [-1, center-deadZone], [-1, 0])
     return 0
 
 def map_motor(input):
@@ -120,11 +120,11 @@ def main():
         leftRear = power * sin / maximum + turn
         rightRear = power * cos / maximum - turn
         
-        if power + abs(turn) > 1:
-            leftFront /= power + turn
-            rightFront /= power - turn
-            leftRear /= power + turn
-            rightRear /= power - turn
+        while abs(leftFront)>1 or abs(rightFront)>1 or abs(leftRear)>1 or abs(rightRear)>1:
+            leftFront *= 0.99
+            rightFront *= 0.99
+            leftRear *= 0.99
+            rightRear *= 0.99
             
             
         motor = [map_motor(leftFront), map_motor(rightFront), map_motor(leftRear), map_motor(rightRear)]
@@ -151,7 +151,7 @@ def main():
         pygame.draw.line(screen, [100, 200, 0], [400, 200], [400+turn*200, 200], width = 10)
       
 
-        bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, motor)
+        # bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, motor)
 
         # Go ahead and update the screen with what we've drawn.
         pygame.display.flip()

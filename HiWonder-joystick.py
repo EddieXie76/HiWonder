@@ -44,12 +44,11 @@ class TextPrint:
     def unindent(self):
         self.x -= 10
 
-deadZone=0.2
-def dead_zone(input):
+def dead_zone(input, deadZone, center):
     if input > deadZone:
-        return interp(input, [deadZone, 1], [0, 1])
+        return interp(input, [deadZone + center, 1], [0, 1])
     if input < -deadZone:
-        return interp(input, [-1, -deadZone], [-1, 0])
+        return interp(input, [-1, -deadZone + center], [-1, 0])
     return 0
 
 def map_motor(input):
@@ -66,10 +65,9 @@ def main():
     # Get ready to print.
     text_print = TextPrint()
 
-    # This dict can be left as-is, since pygame will generate a
-    # pygame.JOYDEVICEADDED event for every joystick connected
-    # at the start of the program.
     joysticks = {}
+    deadZone = {"x":0.1, "y":0.1, "turn":0.13}
+    center = {"x":0.0, "y":0.0, "turn":0.0}
 
     done = False
     while not done:
@@ -82,6 +80,9 @@ def main():
                     joystick = joysticks[event.instance_id]
                     if joystick.rumble(0, 0.7, 500):
                         print(f"Rumble effect played on joystick {event.instance_id}")
+                if event.button == 1:
+                    joystick = joysticks[event.instance_id]
+                    center = {"x": joystick.get_axis(0), "y": joystick.get_axis(1), "turn": joystick.get_axis(2)}
 
             if event.type == pygame.JOYBUTTONUP:
                 print("Joystick button released.")
@@ -103,9 +104,9 @@ def main():
             continue
         joystick = joysticks[0]
         
-        x = dead_zone(joystick.get_axis(0)) * 0.7
-        y = dead_zone(-joystick.get_axis(1))
-        turn = dead_zone(joystick.get_axis(2))
+        x = dead_zone(joystick.get_axis(0), deadZone["x"], center["x"])
+        y = dead_zone(-joystick.get_axis(1), deadZone["y"], center["y"])
+        turn = dead_zone(joystick.get_axis(2), deadZone["turn"], center["turn"])
         
         theta = math.atan2(y, x)
         power = math.hypot(x, y)
@@ -130,6 +131,7 @@ def main():
 
         screen.fill((round(interp(x, [-100, 100], [50, 255])), round(interp(y, [-100, 100], [50, 255])), round(interp(turn, [-100, 100], [50, 255]))))
         
+        text_print.tprint(screen, f"Center: {center}")
         text_print.tprint(screen, f"X: {x}")
         text_print.tprint(screen, f"Y: {y}")
         text_print.tprint(screen, f"Turn: {turn}")
@@ -142,6 +144,7 @@ def main():
         text_print.tprint(screen, f"LeftRear: {leftRear}")
         text_print.tprint(screen, f"LeftRear: {rightRear}")
         text_print.tprint(screen, f"Motor: {motor}")
+        
 
         pygame.draw.circle(screen, [0, 0, 200], [400, 400], 300, width = 5)
         pygame.draw.circle(screen, [200, 0, 0], [400+math.cos(theta)*power*200, 400-math.sin(theta)*power*200], 50)

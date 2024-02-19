@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from numpy import interp
 from smbus2 import SMBus
 import pygame
@@ -46,13 +47,13 @@ class TextPrint:
 
 def dead_zone(input, deadZone, center):
     if input > center+deadZone:
-        return interp(input, [center+deadZone, 1], [0, 1])
+        return interp(input*input, [(center+deadZone)**2, 1], [0, 1.5])
     if input < center-deadZone:
-        return interp(input, [-1, center-deadZone], [-1, 0])
+        return interp(input*-input, [-1, -(center-deadZone)**2], [-1.5, 0])
     return 0
 
 def map_motor(input):
-    return round(interp(input, [-1, 1], [-100, 100]))
+    return round(interp(input, [-1, 1], [-100.0, 100.0]))
 
 def main():
     # Set the width and height of the screen (width, height), and name the window.
@@ -66,8 +67,11 @@ def main():
     text_print = TextPrint()
 
     joysticks = {}
+    joy_id = -1
     deadZone = {"x":0.1, "y":0.1, "turn":0.13}
     center = {"x":0.0, "y":0.0, "turn":0.0}
+    motor_history = [[0.0, 0.0, 0.0, 0.0] for i in range(0, 5)]
+    print(motor_history)
 
     done = False
     while not done:
@@ -91,19 +95,19 @@ def main():
                 joy = pygame.joystick.Joystick(event.device_index)
                 joysticks[joy.get_instance_id()] = joy
                 print(f"Joystick {joy.get_instance_id()} connencted")
+                continue
 
             if event.type == pygame.JOYDEVICEREMOVED:
                 del joysticks[event.instance_id]
                 print(f"Joystick {event.instance_id} disconnected")
+                continue
 
         text_print.reset()
 
-        joystick_count = pygame.joystick.get_count()
-
-        if joystick_count == 0:
+        if len(joysticks) == 0:
             continue
-        joystick = joysticks[0]
-        
+        joystick = next(iter(joysticks.values()))
+                
         x = dead_zone(joystick.get_axis(0), deadZone["x"], center["x"])
         y = dead_zone(-joystick.get_axis(1), deadZone["y"], center["y"])
         turn = dead_zone(joystick.get_axis(2), deadZone["turn"], center["turn"])
@@ -111,26 +115,31 @@ def main():
         theta = math.atan2(y, x)
         power = math.hypot(x, y)
         
-        sin = math.sin(theta - math.pi/4)
-        cos = math.cos(theta - math.pi/4)
-        maximum = max(abs(sin), abs(cos))
+        sin = math.sin(theta-math.pi/4)
+        cos = math.cos(theta-math.pi/4)
+
+        leftFront = power*cos+turn
+        rightFront = power*sin-turn
+        leftRear = power*sin+turn
+        rightRear = power*cos-turn
+        maxValue = max(abs(leftFront), abs(rightFront), abs(leftRear), abs(rightRear))
+        scaleDown = 1.0/maxValue if maxValue>1.0 else 1.0
         
-        leftFront = power * cos / maximum + turn
-        rightFront = power * sin / maximum - turn
-        leftRear = power * sin / maximum + turn
-        rightRear = power * cos / maximum - turn
-        
-        while abs(leftFront)>1 or abs(rightFront)>1 or abs(leftRear)>1 or abs(rightRear)>1:
-            leftFront *= 0.99
-            rightFront *= 0.99
-            leftRear *= 0.99
-            rightRear *= 0.99
-            
+        leftFront *= scaleDown
+        rightFront *= scaleDown
+        leftRear *= scaleDown
+        rightRear *= scaleDown            
             
         motor = [map_motor(leftFront), map_motor(rightFront), map_motor(leftRear), map_motor(rightRear)]
+        motor_history.pop(0)
+        motor_history.append(motor)
+        array=np.array(motor_history)
+        avg = np.average(array, axis=0)
+        motor = [round(avg[0]), round(avg[1]), round(avg[2]), round(avg[3])]
 
         screen.fill((round(interp(x, [-100, 100], [50, 255])), round(interp(y, [-100, 100], [50, 255])), round(interp(turn, [-100, 100], [50, 255]))))
         
+        text_print.tprint(screen, f"Event: {event}")
         text_print.tprint(screen, f"Center: {center}")
         text_print.tprint(screen, f"X: {x}")
         text_print.tprint(screen, f"Y: {y}")
@@ -144,14 +153,22 @@ def main():
         text_print.tprint(screen, f"LeftRear: {leftRear}")
         text_print.tprint(screen, f"LeftRear: {rightRear}")
         text_print.tprint(screen, f"Motor: {motor}")
+        text_print.tprint(screen, f"MaxValue: {maxValue}")
+        text_print.tprint(screen, f"ScaleDown: {scaleDown}")
+        text_print.tprint(screen, f"MotorHistory: {motor_history}")
         
 
         pygame.draw.circle(screen, [0, 0, 200], [400, 400], 300, width = 5)
-        pygame.draw.circle(screen, [200, 0, 0], [400+math.cos(theta)*power*200, 400-math.sin(theta)*power*200], 50)
+        pygame.draw.circle(screen, [200, 0, 0], [400+math.cos(theta)*power*200, 400-math.sin(theta)*power*200], 20)
+        pygame.draw.circle(screen, [20, 20, 20], [400+joystick.get_axis(0)*200, 400+joystick.get_axis(1)*200], 10)
         pygame.draw.line(screen, [100, 200, 0], [400, 200], [400+turn*200, 200], width = 10)
+        pygame.draw.line(screen, [20, 20, 20], [400, 220], [400+joystick.get_axis(2)*200, 220], width = 10)
       
 
-        # bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, motor)
+        if joystick.get_button(3):
+            bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, [0, 0, 0, 0])
+        else:
+            bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, motor)
 
         # Go ahead and update the screen with what we've drawn.
         pygame.display.flip()

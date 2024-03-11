@@ -1,12 +1,11 @@
-import cv2
-
-cap = cv2.VideoCapture(0)
-
-while(True):
-    ret, frame = cap.read()
-    cv2.imshow('frame', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break;
-
-cap.release()
-cv2.destoryAllWindows()
+from picamera2.encoders import H264Encoder
+from picamera2 import Picamera2
+import time
+picam2 = Picamera2()
+video_config = picam2.create_video_configuration()
+picam2.configure(video_config)
+encoder = H264Encoder(bitrate=10000000)
+output = "test.h264"
+picam2.start_recording(encoder, output)
+time.sleep(10)
+picam2.stop_recording()

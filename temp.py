@@ -1,5 +1,5 @@
 from smbus2 import SMBus
-import pygame
+import time
 
 CAM_DEFAULT_I2C_ADDRESS = 0x34
 MOTOR_TYPE_ADDR = 20
@@ -17,81 +17,6 @@ bus.write_byte_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_ENCODER_POLARITY_ADDR, 0)
 b = bus.read_word_data(CAM_DEFAULT_I2C_ADDRESS, ADC_BAT_ADDR)
 print("BAT:", b)
 
-pygame.init()
-window = pygame.display.set_mode((300,300))
-pygame.display.set_caption("Pygame Demonstration")
-
-mainloop=True
-MIN=1
-MAX=100
-s=50
-a=s
-control = [0, 0, 0, 0]
-while mainloop:
-
-    pygame.time.delay(10)
-    for event in pygame.event.get():
-
-        if event.type==pygame.QUIT:
-            mainloop=False
-        
-        if event.type==pygame.KEYDOWN:
-            control = [0, 0, 0, 0]
-            if event.key==117:#u
-                control = [a, a//2, a, a//2]
-            if event.key==121:#y
-                control = [a//2, a, a//2, a]
-            if event.key==104:#h
-                control = [-a//2,-a,-a//2,-a]
-            if event.key==106:#j
-                control = [-a,-a//2,-a,-a//2]
-            if event.key==102:#f
-               control = [-a//5,a//5,a,-a]
-            if event.key==114:#r
-                control = [a//5,-a//5,-a,a]
-            if event.key==49:
-                control = [5,0,0,0]
-            if event.key==50:
-                control = [0,5,0,0]
-            if event.key==51:
-                control = [0,0,5,0]
-            if event.key==52:
-                control = [0,0,0,5]
-            if event.key==264 or event.key==119:#UP w
-                control = [a, a, a, a]
-            if event.key==258 or event.key==120 or event.key==115:#DOWN x s
-                control = [-a, -a, -a, -a]
-            if event.key==260 or event.key==97:#LEFT a
-                control = [-a, a, a, -a]
-            if event.key==262 or event.key==100:#RIGHT d
-                control = [a, -a, -a, a]
-            if event.key==263 or event.key==113:#HOME q
-                control = [0, a, a, 0]
-            if event.key==259 or event.key==99:#PAGE DOWN c
-                control = [0, -a, -a, 0]
-            if event.key==265 or event.key==101:#PAGE UP e
-                control = [a, 0, 0, a]
-            if event.key==257 or event.key==122:#END z
-                control = [-a, 0, 0, -a]
-            if event.key==267 or event.key==91:#/ [
-                control = [-a, a, -a, a]
-            if event.key==268 or event.key==93:#* ]
-                control = [a, -a, a, -a]            
-            if event.key==270 or event.key==61:#+
-                s += 5
-                s = min(s, MAX)
-            if event.key==269 or event.key==45:#-
-                s -= 5
-                s = max(s, MIN)
-            print(f"key={event.key}, a={a}, s={s}, control={control}")
-            bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, control)
-                    
-        if event.type==pygame.KEYUP:
-            control = [0, 0, 0, 0]
-            a=s
-            print(f"key={event.key}, a={a}, s={s}, control={control}")
-            bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, control)
-            
-        
-
-pygame.quit()
+bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, [5, -5, -5, 5])
+time.sleep(1)
+bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, [0, 0, 0, 0])

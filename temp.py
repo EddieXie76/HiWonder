@@ -17,6 +17,14 @@ bus.write_byte_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_ENCODER_POLARITY_ADDR, 0)
 b = bus.read_word_data(CAM_DEFAULT_I2C_ADDRESS, ADC_BAT_ADDR)
 print("BAT:", b)
 
-bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, [5, -5, -5, 5])
-time.sleep(1)
-bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, [0, 0, 0, 0])
+def loop():
+    bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, [5, -5, -5, 5])
+    time.sleep(0.1)
+    bus.write_i2c_block_data(CAM_DEFAULT_I2C_ADDRESS, MOTOR_FIXED_SPEED_ADDR, [0, 0, 0, 0])
+    time.sleep(0.1)
+
+while(True):
+    try:
+        loop()
+    except OSError as e:
+        print(e)
